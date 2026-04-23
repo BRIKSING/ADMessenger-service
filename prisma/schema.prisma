@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  phone       String    @unique
+  username    String?   @unique
+  displayName String
+  avatarUrl   String?
+  bio         String?
+  lastSeen    DateTime?
+  createdAt   DateTime  @default(now())
+
+  initiatedCalls CallLog[] @relation("Initiator")
+  receivedCalls  CallLog[] @relation("Target")
+  contacts       Contact[] @relation("ContactOwner")
+  contactOf      Contact[] @relation("ContactEntry")
+  blockedUsers   Block[]   @relation("Blocker")
+  blockedBy      Block[]   @relation("Blocked")
+}
+
+model Contact {
+  ownerId   String
+  contactId String
+  createdAt DateTime @default(now())
+
+  owner   User @relation("ContactOwner", fields: [ownerId],   references: [id])
+  contact User @relation("ContactEntry", fields: [contactId], references: [id])
+
+  @@id([ownerId, contactId])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id])
+  blocked User @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@id([blockerId, blockedId])
+}
+
+enum CallType {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  ACCEPTED
+  DECLINED
+  MISSED
+}
+
+model CallLog {
+  id          String     @id @default(uuid())
+  initiatorId String
+  targetId    String
+  type        CallType
+  status      CallStatus
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime   @default(now())
+
+  initiator User @relation("Initiator", fields: [initiatorId], references: [id])
+  target    User @relation("Target",    fields: [targetId],    references: [id])
+}
