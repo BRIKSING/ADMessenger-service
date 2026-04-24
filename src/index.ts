@@ -6,6 +6,7 @@ import { createSocketServer } from './socket';
 import authRoutes from './modules/auth/auth.routes';
 import callsRoutes from './modules/calls/calls.routes';
 import usersRoutes from './modules/users/users.routes';
+import chatsRoutes from './modules/chats/chats.routes';
 
 const app = express();
 app.use(express.json());
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/calls', callsRoutes);
 app.use('/users', usersRoutes);
+app.use('/chats', chatsRoutes);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 

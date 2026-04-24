@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { JwtPayload } from '../middleware/auth';
 import { registerCallHandlers } from '../modules/calls/calls.socket';
+import { registerChatHandlers } from '../modules/chats/chats.socket';
 
 export interface AuthSocket extends Socket {
   user: JwtPayload;
@@ -42,6 +43,7 @@ export function createSocketServer(httpServer: HttpServer): Server {
     });
 
     registerCallHandlers(io, authSocket);
+    registerChatHandlers(io, authSocket);
   });
 
   return io;

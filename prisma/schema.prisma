@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+enum CallType {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  ACCEPTED
+  DECLINED
+  MISSED
+}
+
 model User {
   id          String    @id @default(uuid())
   phone       String    @unique
@@ -17,12 +38,15 @@ model User {
   lastSeen    DateTime?
   createdAt   DateTime  @default(now())
 
-  initiatedCalls CallLog[] @relation("Initiator")
-  receivedCalls  CallLog[] @relation("Target")
-  contacts       Contact[] @relation("ContactOwner")
-  contactOf      Contact[] @relation("ContactEntry")
-  blockedUsers   Block[]   @relation("Blocker")
-  blockedBy      Block[]   @relation("Blocked")
+  initiatedCalls  CallLog[]    @relation("Initiator")
+  receivedCalls   CallLog[]    @relation("Target")
+  contacts        Contact[]    @relation("ContactOwner")
+  contactOf       Contact[]    @relation("ContactEntry")
+  blockedUsers    Block[]      @relation("Blocker")
+  blockedBy       Block[]      @relation("Blocked")
+  chatMemberships ChatMember[]
+  sentMessages    Message[]
+  messageReads    MessageRead[]
 }
 
 model Contact {
@@ -47,15 +71,57 @@ model Block {
   @@id([blockerId, blockedId])
 }
 
-enum CallType {
-  VOICE
-  VIDEO
+model Chat {
+  id        String   @id @default(uuid())
+  type      ChatType
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  members  ChatMember[]
+  messages Message[]
 }
 
-enum CallStatus {
-  ACCEPTED
-  DECLINED
-  MISSED
+model ChatMember {
+  chatId   String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([chatId, userId])
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  chatId    String
+  senderId  String
+  type      MessageType @default(TEXT)
+  content   String?
+  replyToId String?
+  editedAt  DateTime?
+  deletedAt DateTime?
+  createdAt DateTime    @default(now())
+
+  chat    Chat          @relation(fields: [chatId], references: [id])
+  sender  User          @relation(fields: [senderId], references: [id])
+  replyTo Message?      @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies Message[]     @relation("ReplyTo")
+  reads   MessageRead[]
+
+  @@index([chatId, createdAt(sort: Desc)])
+}
+
+model MessageRead {
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([messageId, userId])
 }
 
 model CallLog {
