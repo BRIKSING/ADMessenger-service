@@ -6,6 +6,139 @@ Node.js + TypeScript сервер семейного мессенджера. RES
 
 ---
 
+## Деплой на VPS
+
+### Требования к серверу
+
+- VPS: 2 vCPU, 2 ГБ RAM (достаточно для семейного масштаба ~20 пользователей)
+- OS: Ubuntu 22.04 / Debian 12
+- Установлены: Docker 24+, Docker Compose v2, Git
+- Открытые порты: `3000` (API), `3478` UDP+TCP (TURN/STUN), `3478` UDP (TURN relay range)
+
+### Шаг 1 — Клонировать репозиторий
+
+```bash
+git clone <repo-url> /opt/admessenger
+cd /opt/admessenger
+```
+
+### Шаг 2 — Заполнить переменные окружения
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Таблица всех переменных:
+
+| Переменная | Обязательна | Описание |
+|---|---|---|
+| `NODE_ENV` | да | `production` на боевом сервере |
+| `PORT` | да | Порт HTTP-сервера (по умолчанию 3000) |
+| `DATABASE_URL` | да | Строка подключения к PostgreSQL |
+| `REDIS_URL` | да | Строка подключения к Redis |
+| `JWT_SECRET` | да | Случайная строка ≥32 символов, держать в секрете |
+| `JWT_ACCESS_TTL` | да | Время жизни access token (напр. `15m`) |
+| `JWT_REFRESH_TTL` | да | Время жизни refresh token (напр. `30d`) |
+| `POSTGRES_USER` | да | Логин PostgreSQL (для docker-compose) |
+| `POSTGRES_PASSWORD` | да | Пароль PostgreSQL (для docker-compose) |
+| `POSTGRES_DB` | да | Имя базы данных (для docker-compose) |
+| `TURN_SERVER` | да | Адрес Coturn, напр. `turn.example.com:3478` |
+| `TURN_SECRET` | да | Общий секрет с Coturn (любая случайная строка) |
+| `APNS_KEY_PATH` | для iOS push | Путь к `.p8` ключу APNs |
+| `APNS_KEY_ID` | для iOS push | ID ключа из Apple Developer Portal |
+| `APNS_TEAM_ID` | для iOS push | Team ID из Apple Developer Portal |
+| `APNS_BUNDLE_ID` | для iOS push | Bundle ID приложения, напр. `com.example.messenger` |
+| `S3_ENDPOINT` | для медиа | URL MinIO/S3, напр. `http://minio:9000` |
+| `S3_BUCKET` | для медиа | Имя бакета |
+| `S3_ACCESS_KEY` | для медиа | Access key S3 |
+| `S3_SECRET_KEY` | для медиа | Secret key S3 |
+| `MINIO_ROOT_USER` | для медиа | Логин MinIO (для docker-compose) |
+| `MINIO_ROOT_PASSWORD` | для медиа | Пароль MinIO (для docker-compose) |
+| `TWILIO_ACCOUNT_SID` | для OTP SMS | Аккаунт Twilio (нужен после реализации OTP) |
+| `TWILIO_AUTH_TOKEN` | для OTP SMS | Auth token Twilio |
+| `TWILIO_FROM` | для OTP SMS | Номер отправителя SMS |
+
+### Шаг 3 — Положить APNs ключ
+
+Скачать `.p8` файл в Apple Developer Portal → Certificates, Identifiers & Profiles → Keys.
+
+```bash
+mkdir -p /opt/admessenger/certs
+cp ~/Downloads/AuthKey_XXXXXXXXXX.p8 /opt/admessenger/certs/apns.p8
+```
+
+В `.env` указать:
+```
+APNS_KEY_PATH=./certs/apns.p8
+```
+
+### Шаг 4 — Настроить Coturn
+
+Добавить в конфиг Coturn (`/etc/turnserver.conf` или через docker env):
+
+```
+use-auth-secret
+static-auth-secret=<то же значение, что TURN_SECRET в .env>
+realm=turn.example.com
+```
+
+Coturn уже включён в `docker-compose.yml` и запускается автоматически.
+
+### Шаг 5 — Запустить все сервисы
+
+```bash
+docker compose up -d
+```
+
+Запустится: `app`, `postgres`, `redis`, `minio`, `coturn`.
+
+### Шаг 6 — Применить миграции БД
+
+```bash
+docker compose exec app npx prisma migrate deploy
+```
+
+### Шаг 7 — Проверить работу
+
+```bash
+curl http://localhost:3000/health
+# → {"ok":true}
+```
+
+### Обновление сервера
+
+```bash
+git pull
+docker compose build app
+docker compose up -d app
+docker compose exec app npx prisma migrate deploy
+```
+
+---
+
+## Локальная разработка
+
+```bash
+cp .env.example .env       # заполнить DATABASE_URL, REDIS_URL, JWT_SECRET
+docker compose up -d postgres redis
+npm install
+npm run prisma:migrate
+npm run dev
+```
+
+## Команды
+
+```bash
+npm run dev              # запуск в watch-режиме
+npm run build            # компиляция TypeScript → dist/
+npm start                # запуск скомпилированной версии
+npm run prisma:migrate   # создать и применить новую миграцию (dev)
+npm run prisma:generate  # перегенерировать Prisma Client после правок схемы
+```
+
+---
+
 ## Статус реализации
 
 ### ✅ Готово
@@ -75,25 +208,3 @@ Node.js + TypeScript сервер семейного мессенджера. RES
 #### Чаты
 - Системные сообщения (создание группы, добавление / удаление участника)
 - Redis-кэш последних 50 сообщений чата (снизить нагрузку на PostgreSQL)
-
----
-
-## Быстрый старт
-
-```bash
-cp .env.example .env        # заполнить переменные
-docker-compose up -d        # postgres, redis, minio, coturn
-npm install
-npm run prisma:migrate
-npm run dev
-```
-
-## Команды
-
-```bash
-npm run dev              # запуск в watch-режиме
-npm run build            # компиляция TypeScript → dist/
-npm start                # запуск скомпилированной версии
-npm run prisma:migrate   # применить миграции БД
-npm run prisma:generate  # перегенерировать Prisma Client
-```
