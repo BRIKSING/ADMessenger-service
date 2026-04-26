@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
 import { AuthSocket } from '../../socket';
 import * as ChatsService from './chats.service';
+import * as presence from '../presence/presence.service';
+import * as notifications from '../notifications/notifications.service';
 
 interface SendPayload {
   chatId: string;
@@ -46,6 +48,13 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
     for (const memberId of members) {
       if (memberId !== userId) {
         io.to(memberId).emit('message:new', message);
+
+        const online = await presence.isOnline(memberId);
+        if (!online) {
+          notifications.sendMessagePush(memberId, message).catch((err) =>
+            console.error('[push] sendMessagePush error:', err)
+          );
+        }
       }
     }
 

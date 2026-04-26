@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+enum DeviceTokenType {
+  APNS
+  APNS_VOIP
+  FCM
+}
+
 enum ChatType {
   DIRECT
   GROUP
@@ -47,6 +58,7 @@ model User {
   chatMemberships ChatMember[]
   sentMessages    Message[]
   messageReads    MessageRead[]
+  deviceTokens    DeviceToken[]
 }
 
 model Contact {
@@ -69,6 +81,18 @@ model Block {
   blocked User @relation("Blocked", fields: [blockedId], references: [id])
 
   @@id([blockerId, blockedId])
+}
+
+model DeviceToken {
+  id        String          @id @default(uuid())
+  userId    String
+  token     String          @unique
+  type      DeviceTokenType
+  platform  DevicePlatform
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Chat {

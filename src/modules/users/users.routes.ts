@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth';
 import * as UsersService from './users.service';
+import prisma from '../../prisma/client';
 
 const router = Router();
 router.use(requireAuth);
@@ -65,6 +66,40 @@ router.patch('/me', async (req: Request, res: Response): Promise<void> => {
 
   const user = await UsersService.updateProfile(req.user.userId, parsed.data);
   res.json(user);
+});
+
+// POST /users/me/device-token — регистрация токена при логине / обновлении
+router.post('/me/device-token', async (req: Request, res: Response): Promise<void> => {
+  const schema = z.object({
+    token:    z.string().min(1).max(512),
+    type:     z.enum(['APNS', 'APNS_VOIP', 'FCM']),
+    platform: z.enum(['IOS', 'ANDROID']),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+
+  const { token, type, platform } = parsed.data;
+
+  await prisma.deviceToken.upsert({
+    where: { token },
+    create: { userId: req.user.userId, token, type, platform },
+    update: { userId: req.user.userId, platform },
+  });
+
+  res.json({ ok: true });
+});
+
+// DELETE /users/me/device-token — удаление при логауте
+router.delete('/me/device-token', async (req: Request, res: Response): Promise<void> => {
+  const schema = z.object({ token: z.string().min(1) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+
+  await prisma.deviceToken.deleteMany({
+    where: { userId: req.user.userId, token: parsed.data.token },
+  });
+
+  res.json({ ok: true });
 });
 
 export default router;

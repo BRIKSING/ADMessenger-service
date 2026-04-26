@@ -13,4 +13,16 @@ export const config = {
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
+  apns: {
+    keyPath:    process.env.APNS_KEY_PATH || '',
+    keyId:      process.env.APNS_KEY_ID   || '',
+    teamId:     process.env.APNS_TEAM_ID  || '',
+    bundleId:   process.env.APNS_BUNDLE_ID || '',
+    production: process.env.NODE_ENV === 'production',
+  },
+  turn: {
+    server: process.env.TURN_SERVER || '',
+    secret: process.env.TURN_SECRET || '',
+    ttl:    Number(process.env.TURN_TTL) || 3600,
+  },
 };
