@@ -3,6 +3,9 @@ import { config } from '../../config';
 import prisma from '../../prisma/client';
 import type { MessageView } from '../chats/chats.service';
 
+// @types/apn 2.1.x не включает pushType, добавляем вручную
+type ApnNotification = apn.Notification & { pushType?: string };
+
 let _provider: apn.Provider | null = null;
 
 function getProvider(): apn.Provider | null {
@@ -46,7 +49,7 @@ export async function sendMessagePush(
   });
   if (rows.length === 0) return;
 
-  const note = new apn.Notification();
+  const note = new apn.Notification() as ApnNotification;
   note.topic    = config.apns.bundleId;
   note.pushType = 'alert';
   note.expiry   = Math.floor(Date.now() / 1000) + 3600;
@@ -58,7 +61,7 @@ export async function sendMessagePush(
   };
   note.payload = { chatId: message.chatId, messageId: message.id };
 
-  const result = await provider.send(note, rows.map((r) => r.token));
+  const result = await provider.send(note, rows.map((r: { token: string }) => r.token));
   await removeInvalidTokens(result.failed);
 }
 
@@ -79,14 +82,14 @@ export async function sendCallPush(
   });
   if (rows.length === 0) return;
 
-  const note = new apn.Notification();
+  const note = new apn.Notification() as ApnNotification;
   note.topic    = `${config.apns.bundleId}.voip`;
   note.pushType = 'voip';
   note.priority = 10;
   note.expiry   = Math.floor(Date.now() / 1000) + 30;
   note.payload  = { callId, fromUserId, callerName, callType };
 
-  const result = await provider.send(note, rows.map((r) => r.token));
+  const result = await provider.send(note, rows.map((r: { token: string }) => r.token));
   await removeInvalidTokens(result.failed);
 }
 
