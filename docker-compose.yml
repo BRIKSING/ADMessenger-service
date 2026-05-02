@@ -4,6 +4,8 @@ services:
     ports:
       - "3000:3000"
     env_file: .env
+    volumes:
+      - ./certs:/app/certs:ro
     depends_on:
       - postgres
       - redis
