@@ -8,7 +8,13 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:restart": "docker compose down && docker compose up -d",
+    "docker:rebuild": "docker compose down && docker compose up -d --build",
+    "docker:logs": "docker compose logs -f app"
   },
   "author": "BRIKSING",
   "license": "ISC",
