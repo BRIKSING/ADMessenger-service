@@ -62,6 +62,7 @@ export function registerCallHandlers(io: Server, socket: AuthSocket): void {
     });
 
     activeCalls.set(callLog.id, { initiatorId: callerId, targetId: targetUserId, startedAt: new Date() });
+    console.log(`[call] offer: ${callLog.id} from ${callerId} to ${targetUserId} (${type})`);
 
     io.to(targetUserId).emit('call:incoming', {
       callId: callLog.id,
@@ -94,6 +95,7 @@ export function registerCallHandlers(io: Server, socket: AuthSocket): void {
     });
 
     activeCalls.set(callId, { ...call, startedAt: new Date() });
+    console.log(`[call] answered: ${callId} by ${socket.user.userId}`);
 
     io.to(targetUserId).emit('call:answered', { callId, sdp });
   });
@@ -115,6 +117,7 @@ export function registerCallHandlers(io: Server, socket: AuthSocket): void {
       activeCalls.delete(callId);
     }
 
+    console.log(`[call] hangup: ${callId} by ${socket.user.userId}`);
     io.to(targetUserId).emit('call:hangup', { callId });
   });
 
@@ -126,6 +129,7 @@ export function registerCallHandlers(io: Server, socket: AuthSocket): void {
       .catch(() => null);
 
     activeCalls.delete(callId);
+    console.log(`[call] declined: ${callId} by ${socket.user.userId}`);
     io.to(targetUserId).emit('call:declined', { callId });
   });
 }

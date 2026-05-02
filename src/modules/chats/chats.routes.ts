@@ -40,10 +40,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
     const chat = await ChatsService.createDirectChat(userId, parsed.data.targetUserId);
-    res.status(201).json(chat);
+    res.status(201).json({ ...chat, unreadCount: 0, lastMessage: null });
   } else {
     const chat = await ChatsService.createGroupChat(userId, parsed.data.name, parsed.data.memberIds);
-    res.status(201).json(chat);
+    res.status(201).json({ ...chat, unreadCount: 0, lastMessage: null });
   }
 });
 

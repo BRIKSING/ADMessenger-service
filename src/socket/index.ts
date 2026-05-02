@@ -45,6 +45,7 @@ export function createSocketServer(httpServer: HttpServer): Server {
     connectionCount.set(userId, prev + 1);
 
     await presence.setOnline(userId);
+    console.log(`[presence] connected: ${userId}`);
 
     // Новый клиент получает снимок онлайн-пользователей
     const onlineIds = [...connectionCount.entries()]
@@ -66,6 +67,7 @@ export function createSocketServer(httpServer: HttpServer): Server {
         connectionCount.delete(userId);
         await presence.setOffline(userId); // del Redis + lastSeen в БД
         io.emit('presence:update', { userId, online: false, lastSeen: new Date() });
+        console.log(`[presence] disconnected: ${userId}`);
       } else {
         connectionCount.set(userId, remaining);
       }

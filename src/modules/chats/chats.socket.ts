@@ -43,6 +43,7 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
     }
 
     const message = await ChatsService.createMessage(chatId, userId, content.trim(), replyToId);
+    console.log(`[chat] message sent: ${message.id} in chat ${chatId} by ${userId}`);
 
     const members = await ChatsService.getChatMembers(chatId);
     for (const memberId of members) {
@@ -69,6 +70,7 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
     if (!(await ChatsService.isMember(chatId, userId))) return;
 
     await ChatsService.markRead(chatId, userId, messageId);
+    console.log(`[chat] messages read up to ${messageId} in chat ${chatId} by ${userId}`);
 
     const members = await ChatsService.getChatMembers(chatId);
     for (const memberId of members) {

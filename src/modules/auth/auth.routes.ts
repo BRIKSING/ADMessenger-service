@@ -25,6 +25,9 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     user = await prisma.user.create({
       data: { phone, displayName: displayName ?? phone },
     });
+    console.log(`[auth] new user registered: ${user.id} (${phone})`);
+  } else {
+    console.log(`[auth] login: ${user.id} (${phone})`);
   }
 
   const accessToken = signAccessToken({ userId: user.id, phone: user.phone });
