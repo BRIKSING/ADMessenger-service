@@ -3,6 +3,7 @@ import { AuthSocket } from '../../socket';
 import * as ChatsService from './chats.service';
 import * as presence from '../presence/presence.service';
 import * as notifications from '../notifications/notifications.service';
+import * as logger from '../../logger';
 
 interface SendPayload {
   chatId: string;
@@ -43,7 +44,7 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
     }
 
     const message = await ChatsService.createMessage(chatId, userId, content.trim(), replyToId);
-    console.log(`[chat] message sent: ${message.id} in chat ${chatId} by ${userId}`);
+    logger.log(`[chat] message sent: ${message.id} in chat ${chatId} by ${userId}`);
 
     const members = await ChatsService.getChatMembers(chatId);
     for (const memberId of members) {
@@ -53,7 +54,7 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
         const online = await presence.isOnline(memberId);
         if (!online) {
           notifications.sendMessagePush(memberId, message).catch((err) =>
-            console.error('[push] sendMessagePush error:', err)
+            logger.error('[push] sendMessagePush error:', err)
           );
         }
       }
@@ -70,7 +71,7 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
     if (!(await ChatsService.isMember(chatId, userId))) return;
 
     const lastReadAt = await ChatsService.markRead(chatId, userId, messageId);
-    console.log(`[chat] messages read up to ${messageId} in chat ${chatId} by ${userId}`);
+    logger.log(`[chat] messages read up to ${messageId} in chat ${chatId} by ${userId}`);
 
     const members = await ChatsService.getChatMembers(chatId);
     for (const memberId of members) {

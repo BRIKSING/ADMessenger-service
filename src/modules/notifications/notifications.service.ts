@@ -2,6 +2,7 @@ import apn from 'apn';
 import { config } from '../../config';
 import prisma from '../../prisma/client';
 import type { MessageView } from '../chats/chats.service';
+import * as logger from '../../logger';
 
 // @types/apn 2.1.x не включает pushType, добавляем вручную
 type ApnNotification = apn.Notification & { pushType?: string };
@@ -13,7 +14,7 @@ function getProvider(): apn.Provider | null {
 
   const { keyPath, keyId, teamId, bundleId } = config.apns;
   if (!keyPath || !keyId || !teamId || !bundleId) {
-    console.warn('[APNs] not configured — push notifications disabled');
+    logger.warn('[APNs] not configured — push notifications disabled');
     return null;
   }
 
@@ -22,9 +23,9 @@ function getProvider(): apn.Provider | null {
       token: { key: keyPath, keyId, teamId },
       production: config.apns.production,
     });
-    console.log(`[APNs] provider initialized (production=${config.apns.production})`);
+    logger.log(`[APNs] provider initialized (production=${config.apns.production})`);
   } catch (err) {
-    console.error('[APNs] provider init failed:', err);
+    logger.error('[APNs] provider init failed:', err);
   }
   return _provider;
 }
@@ -52,11 +53,11 @@ export async function sendMessagePush(
     select: { token: true },
   });
   if (rows.length === 0) {
-    console.log(`[APNs] no APNS tokens for user ${targetUserId} — skipping`);
+    logger.log(`[APNs] no APNS tokens for user ${targetUserId} — skipping`);
     return;
   }
 
-  console.log(`[APNs] sending message push to ${targetUserId} (${rows.length} token(s))`);
+  logger.log(`[APNs] sending message push to ${targetUserId} (${rows.length} token(s))`);
   const note = new apn.Notification() as ApnNotification;
   note.topic    = config.apns.bundleId;
   note.pushType = 'alert';
@@ -70,8 +71,8 @@ export async function sendMessagePush(
   note.payload = { chatId: message.chatId, messageId: message.id };
 
   const result = await provider.send(note, rows.map((r: { token: string }) => r.token));
-  console.log(`[APNs] message push result — sent: ${result.sent.length}, failed: ${result.failed.length}`);
-  if (result.failed.length > 0) console.error('[APNs] failed:', JSON.stringify(result.failed));
+  logger.log(`[APNs] message push result — sent: ${result.sent.length}, failed: ${result.failed.length}`);
+  if (result.failed.length > 0) logger.error('[APNs] failed:', JSON.stringify(result.failed));
   await removeInvalidTokens(result.failed);
 }
 
@@ -108,5 +109,5 @@ export async function sendFcmPush(
   _targetUserId: string,
   _payload: object
 ): Promise<void> {
-  console.warn('[FCM] not yet implemented');
+  logger.warn('[FCM] not yet implemented');
 }

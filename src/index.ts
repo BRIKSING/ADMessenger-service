@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { EventEmitter } from 'events';
+EventEmitter.defaultMaxListeners = 30;
 import http from 'http';
 import express from 'express';
 import { config } from './config';
@@ -7,6 +9,7 @@ import authRoutes from './modules/auth/auth.routes';
 import callsRoutes from './modules/calls/calls.routes';
 import usersRoutes from './modules/users/users.routes';
 import chatsRoutes from './modules/chats/chats.routes';
+import * as logger from './logger';
 
 const app = express();
 app.use(express.json());
@@ -22,5 +25,5 @@ const httpServer = http.createServer(app);
 createSocketServer(httpServer);
 
 httpServer.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
+  logger.log(`Server running on port ${config.port}`);
 });

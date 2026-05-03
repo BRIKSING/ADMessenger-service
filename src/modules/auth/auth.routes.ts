@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../../prisma/client';
 import { requireAuth, signAccessToken } from '../../middleware/auth';
+import * as logger from '../../logger';
 
 const router = Router();
 
@@ -25,9 +26,9 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     user = await prisma.user.create({
       data: { phone, displayName: displayName ?? phone },
     });
-    console.log(`[auth] new user registered: ${user.id} (${phone})`);
+    logger.log(`[auth] new user registered: ${user.id} (${phone})`);
   } else {
-    console.log(`[auth] login: ${user.id} (${phone})`);
+    logger.log(`[auth] login: ${user.id} (${phone})`);
   }
 
   const accessToken = signAccessToken({ userId: user.id, phone: user.phone });
