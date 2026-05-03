@@ -69,13 +69,13 @@ export function registerChatHandlers(io: Server, socket: AuthSocket): void {
 
     if (!(await ChatsService.isMember(chatId, userId))) return;
 
-    await ChatsService.markRead(chatId, userId, messageId);
+    const lastReadAt = await ChatsService.markRead(chatId, userId, messageId);
     console.log(`[chat] messages read up to ${messageId} in chat ${chatId} by ${userId}`);
 
     const members = await ChatsService.getChatMembers(chatId);
     for (const memberId of members) {
       if (memberId !== userId) {
-        io.to(memberId).emit('message:read', { chatId, messageId, userId, readAt: new Date() });
+        io.to(memberId).emit('message:read', { chatId, messageId, userId, readAt: new Date(), lastReadAt });
       }
     }
   });

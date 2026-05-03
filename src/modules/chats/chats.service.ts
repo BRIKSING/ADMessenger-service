@@ -16,6 +16,9 @@ const MESSAGE_SELECT = {
   replyTo: {
     select: { id: true, senderId: true, content: true, type: true, deletedAt: true },
   },
+  reads: {
+    select: { userId: true, readAt: true },
+  },
 } as const;
 
 export type MessageView = Awaited<ReturnType<typeof createMessage>>;
@@ -177,9 +180,9 @@ export async function deleteMessage(messageId: string, senderId: string, forAll:
   });
 }
 
-export async function markRead(chatId: string, userId: string, messageId: string) {
+export async function markRead(chatId: string, userId: string, messageId: string): Promise<Date | null> {
   const pivot = await prisma.message.findUnique({ where: { id: messageId } });
-  if (!pivot || pivot.chatId !== chatId) return;
+  if (!pivot || pivot.chatId !== chatId) return null;
 
   const unread = await prisma.message.findMany({
     where: {
@@ -192,10 +195,18 @@ export async function markRead(chatId: string, userId: string, messageId: string
     select: { id: true },
   });
 
-  if (unread.length === 0) return;
+  if (unread.length === 0) return pivot.createdAt;
 
-  await prisma.messageRead.createMany({
-    data: unread.map((m) => ({ messageId: m.id, userId })),
-    skipDuplicates: true,
-  });
+  await Promise.all([
+    prisma.messageRead.createMany({
+      data: unread.map((m) => ({ messageId: m.id, userId })),
+      skipDuplicates: true,
+    }),
+    prisma.chatMember.update({
+      where: { chatId_userId: { chatId, userId } },
+      data: { lastReadAt: pivot.createdAt },
+    }),
+  ]);
+
+  return pivot.createdAt;
 }

@@ -107,9 +107,10 @@ model Chat {
 }
 
 model ChatMember {
-  chatId   String
-  userId   String
-  joinedAt DateTime @default(now())
+  chatId     String
+  userId     String
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
 
   chat Chat @relation(fields: [chatId], references: [id])
   user User @relation(fields: [userId], references: [id])
