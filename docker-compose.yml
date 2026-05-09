@@ -43,8 +43,6 @@ services:
       --realm=messenger.local
       --use-auth-secret
       --static-auth-secret=${TURN_SECRET}
-      --no-tlsv1
-      --no-tlsv1_1
       --min-port=49152
       --max-port=65535
 
