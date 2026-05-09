@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { requireAuth } from '../../middleware/auth';
 import { config } from '../../config';
 import prisma from '../../prisma/client';
+import * as logger from '../../logger';
 
 const router = Router();
 
@@ -20,6 +21,8 @@ router.get('/turn-credentials', requireAuth, (req: Request, res: Response): void
   const expiry   = Math.floor(Date.now() / 1000) + ttl;
   const username = `${expiry}:${req.user.userId}`;
   const password = crypto.createHmac('sha1', secret).update(username).digest('base64');
+
+  logger.log(`[turn] credentials issued: userId=${req.user.userId} server=${server} ttl=${ttl}`);
 
   res.json({
     username,
