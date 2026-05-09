@@ -103,6 +103,7 @@ export function registerCallHandlers(io: Server, socket: AuthSocket): void {
 
   socket.on('call:ice-candidate', (payload: IceCandidatePayload) => {
     const { targetUserId, candidate, callId } = payload;
+    logger.log(`[call] ice-candidate: callId=${callId} from=${callerId} to=${targetUserId} candidate=${candidate.candidate}`);
     io.to(targetUserId).emit('call:ice-candidate', { callId, candidate, fromUserId: callerId });
   });
 
